@@ -3,17 +3,6 @@
 # type: ignore[union-attr]
 # This program is dedicated to the public domain under the CC0 license.
 
-"""
-First, a few callback functions are defined. Then, those functions are passed to
-the Dispatcher and registered at their respective places.
-Then, the bot is started and runs until we press Ctrl-C on the command line.
-Usage:
-Example of a bot-user conversation using ConversationHandler.
-Send /start to initiate the conversation.
-Press Ctrl-C on the command line or send a signal to the process to stop the
-bot.
-"""
-
 import logging
 
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
@@ -33,25 +22,26 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-GENDER, PHOTO, LOCATION, BIO = range(4)
+CORPUS, PHOTO, LOCATION, BIO = range(4)
 
 
 def start(update: Update, context: CallbackContext) -> int:
-    reply_keyboard = [['Boy', 'Girl', 'Other']]
+    reply_keyboard = [['1']]
 
     update.message.reply_text(
-        'Hi! My name is Professor Bot. I will hold a conversation with you. '
-        'Send /cancel to stop talking to me.\n\n'
-        'Are you a boy or a girl?',
+        'Приветствуем! Этот бот поможет авторизоваться в закрытом чате жильцов своего корпуса.\n\n'
+        'Для выхода из диалога введите /cancel \n\n'
+        'Для продолжения выберите номер корпуса',
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True),
     )
 
-    return GENDER
+    return CORPUS
 
 
-def gender(update: Update, context: CallbackContext) -> int:
+def corpus(update: Update, context: CallbackContext) -> int:
     user = update.message.from_user
-    logger.info("Gender of %s: %s", user.first_name, update.message.text)
+    userprint = user.full_name + ' ' + str(user.id) + ' ' + user.name
+    logger.info("Corpus of %s: %s", userprint, update.message.text)
     update.message.reply_text(
         'I see! Please send me a photo of yourself, '
         'so I know what you look like, or send /skip if you don\'t want to.',
@@ -110,7 +100,7 @@ def bio(update: Update, context: CallbackContext) -> int:
     user = update.message.from_user
     logger.info("Bio of %s: %s", user.first_name, update.message.text)
     update.message.reply_text('Thank you! I hope we can talk again some day.')
-
+    context.bot.send_message(chat_id='341319501', text=user.name)
     return ConversationHandler.END
 
 
@@ -137,7 +127,7 @@ def main() -> None:
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            GENDER: [MessageHandler(Filters.regex('^(Boy|Girl|Other)$'), gender)],
+            CORPUS: [MessageHandler(Filters.regex('^(1)$'), corpus)],
             PHOTO: [MessageHandler(Filters.photo, photo), CommandHandler('skip', skip_photo)],
             LOCATION: [
                 MessageHandler(Filters.location, location),
