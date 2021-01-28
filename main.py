@@ -106,7 +106,7 @@ def visable(update: Update, context: CallbackContext) -> int:
     logger.info("Visable of %s: %s", user.first_name, update.message.text)
     update.message.reply_text("Хорошо. Пожалуйста, проверьте корректность информации"
                               "{}".format(facts_to_str(user_data)),
-                              ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)
+                              ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)),
 
     return ConversationHandler.END
 
