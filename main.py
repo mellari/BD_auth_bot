@@ -22,7 +22,16 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-CORPUS, PHOTO, LOCATION, BIO = range(4)
+CORPUS, FLAT, PHOTO, VISABLE, CONFIRMATION = range(5)
+
+
+def facts_to_str(user_data):
+    facts = list()
+
+    for key, value in user_data.items():
+        facts.append('{} - {}'.format(key, value))
+
+    return "\n".join(facts).join(['\n', '\n'])
 
 
 def start(update: Update, context: CallbackContext) -> int:
@@ -32,7 +41,7 @@ def start(update: Update, context: CallbackContext) -> int:
         'Приветствуем! Этот бот поможет авторизоваться в закрытом чате жильцов своего корпуса.\n\n'
         'Для выхода из диалога введите /cancel \n\n'
         'Для продолжения выберите номер корпуса',
-        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True),
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True),
     )
 
     return CORPUS
@@ -40,78 +49,96 @@ def start(update: Update, context: CallbackContext) -> int:
 
 def corpus(update: Update, context: CallbackContext) -> int:
     user = update.message.from_user
-    userprint = user.full_name + ' ' + str(user.id) + ' ' + user.name
-    logger.info("Corpus of %s: %s", userprint, update.message.text)
+    user_data = context.user_data
+    category = 'Corpus'
+    text = update.message.text
+    user_data[category] = text
+    logger.info("Corpus of %s: %s", user.first_name, update.message.text)
     update.message.reply_text(
-        'I see! Please send me a photo of yourself, '
-        'so I know what you look like, or send /skip if you don\'t want to.',
-        reply_markup=ReplyKeyboardRemove(),
+        'Хорошо, теперь напишите номер квартиры в корпусе или этаж/площадь',
+    )
+
+    return FLAT
+
+
+def flat(update: Update, context: CallbackContext) -> int:
+    user = update.message.from_user
+    user_data = context.user_data
+    category = 'Flat'
+    text = update.message.text
+    user_data[category] = text
+    logger.info("Flat of %s: %s", user.first_name, update.message.text)
+    update.message.reply_text(
+        'Спасибо!\n\n'
+        'Теперь вам нужно подтвердить владение квартирой в этом корпусе\n\n'
+        'Пришлите скриншот из личного кабинета ПИК или фото ДДУ, в которых отчётливо виден адрес дома',
     )
 
     return PHOTO
 
 
 def photo(update: Update, context: CallbackContext) -> int:
+    reply_keyboard = [['Да', 'Нет']]
     user = update.message.from_user
+    user_data = context.user_data
     photo_file = update.message.photo[-1].get_file()
     photo_file.download('user_photo.jpg')
+    category = 'Screenshot'
+    user_data[category] = 'Yes'
     logger.info("Photo of %s: %s", user.first_name, 'user_photo.jpg')
     update.message.reply_text(
-        'Gorgeous! Now, send me your location please, ' 'or send /skip if you don\'t want to.'
+        'Отлично.\n\n'
+        'Вы согласны на размещение вашего ника Telegram и номера квартиры в общей таблице жильцов корпуса?'
+        'Она будет открыта для участников чата корпуса.',
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True),
     )
 
-    return LOCATION
+    return VISABLE
 
 
-def skip_photo(update: Update, context: CallbackContext) -> int:
+def visable(update: Update, context: CallbackContext) -> int:
+    reply_keyboard = [['Отправить админу', 'Не отправлять']]
     user = update.message.from_user
-    logger.info("User %s did not send a photo.", user.first_name)
-    update.message.reply_text(
-        'I bet you look great! Now, send me your location please, ' 'or send /skip.'
-    )
+    user_data = context.user_data
+    category = 'Visable'
+    text = update.message.text
+    user_data[category] = text
+    logger.info("Visable of %s: %s", user.first_name, update.message.text)
+    update.message.reply_text("Хорошо. Пожалуйста, проверьте корректность информации"
+                              "{}".format(facts_to_str(user_data)),
+                              ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)
 
-    return LOCATION
-
-
-def location(update: Update, context: CallbackContext) -> int:
-    user = update.message.from_user
-    user_location = update.message.location
-    logger.info(
-        "Location of %s: %f / %f", user.first_name, user_location.latitude, user_location.longitude
-    )
-    update.message.reply_text(
-        'Maybe I can visit you sometime! ' 'At last, tell me something about yourself.'
-    )
-
-    return BIO
-
-
-def skip_location(update: Update, context: CallbackContext) -> int:
-    user = update.message.from_user
-    logger.info("User %s did not send a location.", user.first_name)
-    update.message.reply_text(
-        'You seem a bit paranoid! ' 'At last, tell me something about yourself.'
-    )
-
-    return BIO
-
-
-def bio(update: Update, context: CallbackContext) -> int:
-    user = update.message.from_user
-    logger.info("Bio of %s: %s", user.first_name, update.message.text)
-    update.message.reply_text('Thank you! I hope we can talk again some day.')
-    context.bot.send_message(chat_id='341319501', text=user.name)
     return ConversationHandler.END
 
+
+def confirmation(update: Update, context: CallbackContext) -> int:
+    user_data = context.user_data
+    user = update.message.from_user
+    update.message.reply_text("Готово. Информация отправлена администратору чата для проверки",
+                              reply_markup=ReplyKeyboardRemove())
+    context.bot.send_photo(chat_id=341319501, photo=open('user_photo.jpg', 'rb'),
+                           caption="Новый участник чата корпуса пишет: \n {}".format(
+                               facts_to_str(user_data)) +
+                                   "For more information, message the poster".format(user.name)),
+
+    return ConversationHandler.END
+
+
+#    context.bot.send_message(chat_id='341319501', text=user.name)
 
 def cancel(update: Update, context: CallbackContext) -> int:
     user = update.message.from_user
     logger.info("User %s canceled the conversation.", user.first_name)
     update.message.reply_text(
-        'Bye! I hope we can talk again some day.', reply_markup=ReplyKeyboardRemove()
+        'Отменено. Для перезапуска бота введите /start в любой момент', reply_markup=ReplyKeyboardRemove()
     )
 
     return ConversationHandler.END
+
+
+def error(update, context):
+    """Log Errors caused by Updates."""
+    logger.warning('Update "%s" caused error "%s"', update, context.error)
 
 
 def main() -> None:
@@ -128,12 +155,11 @@ def main() -> None:
         entry_points=[CommandHandler('start', start)],
         states={
             CORPUS: [MessageHandler(Filters.regex('^(1)$'), corpus)],
-            PHOTO: [MessageHandler(Filters.photo, photo), CommandHandler('skip', skip_photo)],
-            LOCATION: [
-                MessageHandler(Filters.location, location),
-                CommandHandler('skip', skip_location),
-            ],
-            BIO: [MessageHandler(Filters.text & ~Filters.command, bio)],
+            FLAT: [MessageHandler(Filters.text & ~Filters.command, flat)],
+            PHOTO: [MessageHandler(Filters.photo, photo)],
+            VISABLE: [MessageHandler(Filters.regex('^(Да|Нет)$'), visable)],
+            CONFIRMATION: [MessageHandler(Filters.regex('^Отправить админу$'), confirmation),
+                           MessageHandler(Filters.regex('^Не отправлять$'), start)]
         },
         fallbacks=[CommandHandler('cancel', cancel)],
     )
