@@ -22,7 +22,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-CORPUS, FLAT, PHOTO, VISABLE, CONFIRMATION = range(5)
+CORPUS, FLAT, PHOTO, VIS, CONFIRMATION = range(5)
 
 
 def facts_to_str(user_data):
@@ -35,8 +35,12 @@ def facts_to_str(user_data):
 
 
 def start(update: Update, context: CallbackContext) -> int:
-    reply_keyboard = [['1']]
-
+    reply_keyboard = [['1', '3', '6']]
+    user = update.message.from_user
+    user_data = context.user_data
+    category = 'Имя'
+    text = user.full_name
+    user_data[category] = text
     update.message.reply_text(
         'Приветствуем! Этот бот поможет авторизоваться в закрытом чате жильцов своего корпуса.\n\n'
         'Для выхода из диалога введите /cancel \n\n'
@@ -50,12 +54,16 @@ def start(update: Update, context: CallbackContext) -> int:
 def corpus(update: Update, context: CallbackContext) -> int:
     user = update.message.from_user
     user_data = context.user_data
-    category = 'Corpus'
+    category = 'Номер корпуса'
     text = update.message.text
     user_data[category] = text
-    logger.info("Corpus of %s: %s", user.first_name, update.message.text)
+    logger.info("Corpus of %s: %s", user.name, update.message.text)
+    if user_data['Номер корпуса'] == '6':
+        megatext = 'Хорошо, теперь напишите номер этажа и площадь квартиры'
+    else:
+        megatext = 'Хорошо, теперь напишите номер квартиры или этаж/площадь'
     update.message.reply_text(
-        'Хорошо, теперь напишите номер квартиры в корпусе или этаж/площадь',
+        megatext,
     )
 
     return FLAT
@@ -64,10 +72,10 @@ def corpus(update: Update, context: CallbackContext) -> int:
 def flat(update: Update, context: CallbackContext) -> int:
     user = update.message.from_user
     user_data = context.user_data
-    category = 'Flat'
+    category = 'Квартира'
     text = update.message.text
     user_data[category] = text
-    logger.info("Flat of %s: %s", user.first_name, update.message.text)
+    logger.info("Flat of %s: %s", user.name, update.message.text)
     update.message.reply_text(
         'Спасибо!\n\n'
         'Теперь вам нужно подтвердить владение квартирой в этом корпусе\n\n'
@@ -83,48 +91,52 @@ def photo(update: Update, context: CallbackContext) -> int:
     user_data = context.user_data
     photo_file = update.message.photo[-1].get_file()
     photo_file.download('user_photo.jpg')
-    category = 'Screenshot'
-    user_data[category] = 'Yes'
-    logger.info("Photo of %s: %s", user.first_name, 'user_photo.jpg')
+    category = 'Подтверждение'
+    user_data[category] = 'Да'
+    logger.info("Photo of %s: %s", user.name, 'user_photo.jpg')
     update.message.reply_text(
         'Отлично.\n\n'
         'Вы согласны на размещение вашего ника Telegram и номера квартиры в общей таблице жильцов корпуса?'
-        'Она будет открыта для участников чата корпуса.',
+        ' Она будет открыта для участников чата корпуса.',
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True),
     )
 
-    return VISABLE
+    return VIS
 
 
-def visable(update: Update, context: CallbackContext) -> int:
-    reply_keyboard = [['Отправить админу', 'Не отправлять']]
+def vis(update: Update, context: CallbackContext) -> int:
+    reply_keyboard = [['Отправить', 'Не отправлять']]
     user = update.message.from_user
     user_data = context.user_data
-    category = 'Visable'
+    category = 'Публикация в таблице жильцов'
     text = update.message.text
     user_data[category] = text
-    logger.info("Visable of %s: %s", user.first_name, update.message.text)
-    update.message.reply_text("Хорошо. Пожалуйста, проверьте корректность информации"
-                              "{}".format(facts_to_str(user_data)),
-                              ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)),
+    logger.info("Visable of %s: %s", user.name, update.message.text)
+    update.message.reply_text(
+        'Хорошо. Пожалуйста, проверьте корректность информации \n\n'
+        'Нажмите кнопку Отправить для отправки данных администратору чата корпуса'
+        '{}'.format(facts_to_str(user_data)),
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)),
 
-    return ConversationHandler.END
+    return CONFIRMATION
 
 
 def confirmation(update: Update, context: CallbackContext) -> int:
     user_data = context.user_data
     user = update.message.from_user
-    update.message.reply_text("Готово. Информация отправлена администратору чата для проверки",
+    corp_admins = {'1': 341319501, '3': 966732442, '6': 565045535}
+    corpus_no = user_data['Номер корпуса']
+    corpus_admin = corp_admins[corpus_no]
+    logger.info("Admin of %s: %s", corpus_no, corpus_admin)
+    logger.info("User %s chat_id is %s", user.full_name, user.id)
+    update.message.reply_text("Готово. Информация отправлена администратору чата для проверки. Ожидайте ответа.",
                               reply_markup=ReplyKeyboardRemove())
-    context.bot.send_photo(chat_id=341319501, photo=open('user_photo.jpg', 'rb'),
-                           caption="Новый участник чата корпуса пишет: \n {}".format(
-                               facts_to_str(user_data)) +
-                                   "For more information, message the poster".format(user.name)),
+    context.bot.send_photo(chat_id=corpus_admin, photo=open('user_photo.jpg', 'rb'),
+                           caption='Привет, есть заявка на добавление в чат: \n {}'.format(facts_to_str(user_data)) +
+                                   '\nСвязь с кандидатом \n {}'.format(user.name))
 
     return ConversationHandler.END
 
-
-#    context.bot.send_message(chat_id='341319501', text=user.name)
 
 def cancel(update: Update, context: CallbackContext) -> int:
     user = update.message.from_user
@@ -154,18 +166,18 @@ def main() -> None:
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            CORPUS: [MessageHandler(Filters.regex('^(1)$'), corpus)],
+            CORPUS: [MessageHandler(Filters.regex('^(1|3|6)$'), corpus)],
             FLAT: [MessageHandler(Filters.text & ~Filters.command, flat)],
             PHOTO: [MessageHandler(Filters.photo, photo)],
-            VISABLE: [MessageHandler(Filters.regex('^(Да|Нет)$'), visable)],
-            CONFIRMATION: [MessageHandler(Filters.regex('^Отправить админу$'), confirmation),
-                           MessageHandler(Filters.regex('^Не отправлять$'), start)]
+            VIS: [MessageHandler(Filters.regex('^(Да|Нет)$'), vis)],
+            CONFIRMATION: [MessageHandler(Filters.regex('^(Отправить)$'), confirmation),
+                           MessageHandler(Filters.regex('^(Не отправлять)$'), start)]
         },
         fallbacks=[CommandHandler('cancel', cancel)],
     )
 
     dispatcher.add_handler(conv_handler)
-
+    dispatcher.add_error_handler(error)
     # Start the Bot
     updater.start_polling()
 
