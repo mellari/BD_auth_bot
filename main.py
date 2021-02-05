@@ -5,7 +5,7 @@
 
 import logging
 
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update, KeyboardButton
 from telegram.ext import (
     Updater,
     CommandHandler,
@@ -22,7 +22,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-CORPUS, FLAT, PHOTO, VIS, CONFIRMATION = range(5)
+CORPUS, FLOOR, PLOSHAD, FLAT, PHOTO, VIS, CONTACT, CONFIRMATION = range(8)
 
 
 def facts_to_str(user_data):
@@ -35,7 +35,7 @@ def facts_to_str(user_data):
 
 
 def start(update: Update, context: CallbackContext) -> int:
-    reply_keyboard = [['1', '3', '6']]
+    reply_keyboard = [['1', '3', '6', '19.1', '9 3/4']]
     user = update.message.from_user
     user_data = context.user_data
     category = 'Имя'
@@ -58,12 +58,36 @@ def corpus(update: Update, context: CallbackContext) -> int:
     text = update.message.text
     user_data[category] = text
     logger.info("Corpus of %s: %s", user.name, update.message.text)
-    if user_data['Номер корпуса'] == '6':
-        megatext = 'Хорошо, теперь напишите номер этажа и площадь квартиры'
-    else:
-        megatext = 'Хорошо, теперь напишите номер квартиры или этаж/площадь'
     update.message.reply_text(
-        megatext,
+        'Хорошо, теперь напишите номер вашего этажа',
+    )
+
+    return FLOOR
+
+
+def floor(update: Update, context: CallbackContext) -> int:
+    user = update.message.from_user
+    user_data = context.user_data
+    category = 'Этаж'
+    text = update.message.text
+    user_data[category] = text
+    logger.info("Floor of %s: %s", user.name, update.message.text)
+    update.message.reply_text(
+        'Хорошо, теперь напишите площадь квартиры',
+    )
+
+    return PLOSHAD
+
+
+def ploshad(update: Update, context: CallbackContext) -> int:
+    user = update.message.from_user
+    user_data = context.user_data
+    category = 'Площадь'
+    text = update.message.text
+    user_data[category] = text
+    logger.info("Area of %s: %s", user.name, update.message.text)
+    update.message.reply_text(
+        'Напишите актуальный номер квартиры',
     )
 
     return FLAT
@@ -105,16 +129,40 @@ def photo(update: Update, context: CallbackContext) -> int:
 
 
 def vis(update: Update, context: CallbackContext) -> int:
-    reply_keyboard = [['Отправить', 'Не отправлять']]
     user = update.message.from_user
     user_data = context.user_data
     category = 'Публикация в таблице жильцов'
     text = update.message.text
     user_data[category] = text
     logger.info("Visable of %s: %s", user.name, update.message.text)
+    if user_data['Номер корпуса'] == '9 3/4':
+        contact_but = KeyboardButton('Отправить номер', request_contact=True)
+        reply_keyboard = [[contact_but, 'Не отправлять']]
+        update.message.reply_text(
+            'Запрашиваем контакт',
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)),
+        return CONTACT
+    else:
+        reply_keyboard = [['Отправить', 'Не отправлять']]
+        update.message.reply_text(
+            'Хорошо. Пожалуйста, проверьте корректность информации \n\n'
+            'Нажмите кнопку Отправить для отправки данных администратору чата корпуса\n'
+            '{}'.format(facts_to_str(user_data)),
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)),
+        return CONFIRMATION
+
+
+def contact(update: Update, context: CallbackContext) -> int:
+    reply_keyboard = [['Отправить', 'Не отправлять']]
+    #user = update.message.from_user
+    #user_data = context.user_data
+    #category = 'Контактные данные'
+    #text = update.message.text
+    #user_data[category] = text
+    #logger.info("Contact of %s: %s", user.name, update.message.text)
     update.message.reply_text(
         'Хорошо. Пожалуйста, проверьте корректность информации \n\n'
-        'Нажмите кнопку Отправить для отправки данных администратору чата корпуса'
+        'Нажмите кнопку Отправить для отправки данных администратору чата корпуса\n'
         '{}'.format(facts_to_str(user_data)),
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)),
 
@@ -124,7 +172,7 @@ def vis(update: Update, context: CallbackContext) -> int:
 def confirmation(update: Update, context: CallbackContext) -> int:
     user_data = context.user_data
     user = update.message.from_user
-    corp_admins = {'1': 341319501, '3': 966732442, '6': 565045535}
+    corp_admins = {'1': 341319501, '3': 966732442, '6': 565045535, '19.1': 772564363, '9 3/4': 341319501}
     corpus_no = user_data['Номер корпуса']
     corpus_admin = corp_admins[corpus_no]
     logger.info("Admin of %s: %s", corpus_no, corpus_admin)
@@ -166,10 +214,13 @@ def main() -> None:
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            CORPUS: [MessageHandler(Filters.regex('^(1|3|6)$'), corpus)],
+            CORPUS: [MessageHandler(Filters.regex('^(1|3|6|19.1|9 3/4)$'), corpus)],
+            FLOOR: [MessageHandler(Filters.text & ~Filters.command, floor)],
+            PLOSHAD: [MessageHandler(Filters.text & ~Filters.command, ploshad)],
             FLAT: [MessageHandler(Filters.text & ~Filters.command, flat)],
             PHOTO: [MessageHandler(Filters.photo, photo)],
             VIS: [MessageHandler(Filters.regex('^(Да|Нет)$'), vis)],
+            CONTACT: [MessageHandler, contact],
             CONFIRMATION: [MessageHandler(Filters.regex('^(Отправить)$'), confirmation),
                            MessageHandler(Filters.regex('^(Не отправлять)$'), start)]
         },
