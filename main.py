@@ -140,7 +140,7 @@ def vis(update: Update, context: CallbackContext) -> int:
         reply_keyboard = [[contact_but, 'Не отправлять']]
         update.message.reply_text(
             'Запрашиваем контакт',
-            reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)),
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True)),
         return CONTACT
     else:
         reply_keyboard = [['Отправить', 'Не отправлять']]
@@ -154,12 +154,12 @@ def vis(update: Update, context: CallbackContext) -> int:
 
 def contact(update: Update, context: CallbackContext) -> int:
     reply_keyboard = [['Отправить', 'Не отправлять']]
-    #user = update.message.from_user
-    #user_data = context.user_data
-    #category = 'Контактные данные'
-    #text = update.message.text
-    #user_data[category] = text
-    #logger.info("Contact of %s: %s", user.name, update.message.text)
+    user = update.message.from_user
+    user_data = context.user_data
+    category = 'Контактные данные'
+    text = update.message.contact.phone_number
+    user_data[category] = text
+    logger.info("Contact of %s: %s", user.name, update.message.text)
     update.message.reply_text(
         'Хорошо. Пожалуйста, проверьте корректность информации \n\n'
         'Нажмите кнопку Отправить для отправки данных администратору чата корпуса\n'
@@ -220,7 +220,7 @@ def main() -> None:
             FLAT: [MessageHandler(Filters.text & ~Filters.command, flat)],
             PHOTO: [MessageHandler(Filters.photo, photo)],
             VIS: [MessageHandler(Filters.regex('^(Да|Нет)$'), vis)],
-            CONTACT: [MessageHandler, contact],
+            CONTACT: [MessageHandler(Filters.contact, contact)],
             CONFIRMATION: [MessageHandler(Filters.regex('^(Отправить)$'), confirmation),
                            MessageHandler(Filters.regex('^(Не отправлять)$'), start)]
         },
