@@ -197,8 +197,7 @@ def confirmation(update: Update, context: CallbackContext) -> int:
     update.message.reply_text("Готово. Информация отправлена администратору чата для проверки. Ожидайте ответа.",
                               reply_markup=ReplyKeyboardRemove())
     context.bot.send_photo(chat_id=corpus_admin, photo=open('user_photo.jpg', 'rb'),
-                           caption='Привет, есть заявка на добавление в чат: \n {}'.format(facts_to_str(user_data)) +
-                                   '\nСвязь с кандидатом \n {}'.format(user.name))
+                           caption='Привет, есть заявка на добавление в чат: \n {}'.format(facts_to_str(user_data)))
     return ConversationHandler.END
 
 
