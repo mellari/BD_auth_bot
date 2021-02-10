@@ -158,6 +158,7 @@ def vis(update: Update, context: CallbackContext) -> int:
     else:
         contact_but = KeyboardButton('Отправить номер телефона', request_contact=True)
         reply_keyboard = [[contact_but, 'Веруться']]
+        logger.info("Phone of %s: %s", user.name, "Yes")
         update.message.reply_text(
             'В настройи вашего профиля Telegram не записано имя пользователя для обратной связи. '
             'Вы можете заполнить параметр Имя пользователя в настройках профиля и вернуться к началу, '
