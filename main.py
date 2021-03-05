@@ -175,7 +175,6 @@ def contact(update: Update, context: CallbackContext) -> int:
     text = update.message.contact.phone_number
     user_data[category] = text
     logger.info("Contact of %s: %s", user.name, update.message.text)
-    context.bot.send_contact()
     update.message.reply_text(
         'Хорошо. Пожалуйста, проверьте корректность информации \n\n'
         'Нажмите кнопку Отправить для отправки данных администратору чата корпуса\n'
