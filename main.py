@@ -163,7 +163,7 @@ def vis(update: Update, context: CallbackContext) -> int:
             'В настройи вашего профиля Telegram не записано имя пользователя для обратной связи. '
             'Вы можете заполнить параметр Имя пользователя в настройках профиля и вернуться к началу, '
             'либо указать номер телефона в качестве контактных данных.',
-            reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True)),
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)),
         return CONTACT
 
 
