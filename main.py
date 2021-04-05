@@ -135,23 +135,14 @@ def vis(update: Update, context: CallbackContext) -> int:
     text = update.message.text
     user_data[category] = text
     logger.info("Visable of %s: %s", user.name, update.message.text)
-    """
-    if user_data['Номер корпуса'] == '9 3/4':
-        contact_but = KeyboardButton('Отправить номер', request_contact=True)
-        reply_keyboard = [[contact_but, 'Не отправлять']]
-        update.message.reply_text(
-            'Запрашиваем контакт',
-            reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True)),
-        return CONTACT
-    """
     if user.name[0] == '@':
-        reply_keyboard = [['Отправить', 'Не отправлять']]
+        reply_keyboard = [['Подтвердить', 'Отказаться']]
         category = 'Имя пользователя'
         text = user.name
         user_data[category] = text
         update.message.reply_text(
             'Хорошо. Пожалуйста, проверьте корректность информации \n\n'
-            'Нажмите кнопку Отправить для отправки данных администратору чата корпуса\n'
+            'Нажмите кнопку Подтвердить для создания заявки на вступление в группу корпуса\n'
             '{}'.format(facts_to_str(user_data)),
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)),
         return CONFIRMATION
@@ -160,24 +151,25 @@ def vis(update: Update, context: CallbackContext) -> int:
         reply_keyboard = [[contact_but, 'Веруться']]
         logger.info("Phone of %s: %s", user.name, "Yes")
         update.message.reply_text(
-            'В настройи вашего профиля Telegram не записано имя пользователя для обратной связи. '
-            'Вы можете заполнить параметр Имя пользователя в настройках профиля и вернуться к началу, '
+            'В вашем профиле Telegram отсутствует имя пользователя.'
+            'Для того чтобы вас можно было добавить в группу, вы можете заполнить параметр Имя пользователя в '
+            'настройках профиля и вернуться к началу, '
             'либо указать номер телефона в качестве контактных данных.',
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)),
         return CONTACT
 
 
 def contact(update: Update, context: CallbackContext) -> int:
-    reply_keyboard = [['Отправить', 'Не отправлять']]
+    reply_keyboard = [['Подтвердить', 'Отказаться']]
     user = update.message.from_user
     user_data = context.user_data
     category = 'Номер телефона'
-    text = update.message.contact.phone_number
+    text = '+' + update.message.contact.phone_number
     user_data[category] = text
     logger.info("Contact of %s: %s", user.name, update.message.text)
     update.message.reply_text(
         'Хорошо. Пожалуйста, проверьте корректность информации \n\n'
-        'Нажмите кнопку Отправить для отправки данных администратору чата корпуса\n'
+        'Нажмите кнопку Подтвердить для создания заявки на вступление в группу корпуса\n'
         '{}'.format(facts_to_str(user_data)),
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)),
     return CONFIRMATION
@@ -234,8 +226,8 @@ def main() -> None:
             VIS: [MessageHandler(Filters.regex('^(Да|Нет)$'), vis)],
             CONTACT: [MessageHandler(Filters.contact, contact),
                       MessageHandler(Filters.regex('^(Веруться)$'), start)],
-            CONFIRMATION: [MessageHandler(Filters.regex('^(Отправить)$'), confirmation),
-                           MessageHandler(Filters.regex('^(Не отправлять)$'), start)]
+            CONFIRMATION: [MessageHandler(Filters.regex('^(Подтвердить)$'), confirmation),
+                           MessageHandler(Filters.regex('^(Отказаться)$'), start)]
         },
         fallbacks=[CommandHandler('cancel', cancel)],
     )
