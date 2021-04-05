@@ -115,11 +115,11 @@ def photo(update: Update, context: CallbackContext) -> int:
     user_data = context.user_data
     photo_file = update.message.photo[-1].get_file()
     userid = user.id
-    filename = '_user_photo.jpg'
+    filename = userid + '_user_photo.jpg'
     photo_file.download(filename)
     category = 'Подтверждение'
     user_data[category] = 'Да'
-    logger.info("Photo of %s: %s", user.name, user.id + filename)
+    logger.info("Photo of %s: %s", user.name, filename)
     update.message.reply_text(
         'Отлично.\n\n'
         'Вы согласны на размещение вашего ника Telegram и номера квартиры в общей таблице жильцов корпуса?'
@@ -167,7 +167,7 @@ def contact(update: Update, context: CallbackContext) -> int:
     user_data = context.user_data
     category = 'Номер телефона'
     pnumber = str(update.message.contact.phone_number)
-    text = pnumber
+    text = '+' + pnumber
     user_data[category] = text
     logger.info("Contact of %s: %s", user.name, update.message.text)
     update.message.reply_text(
@@ -187,7 +187,7 @@ def confirmation(update: Update, context: CallbackContext) -> int:
     logger.info("Admin of %s: %s", corpus_no, corpus_admin)
     logger.info("User %s chat_id is %s", user.full_name, user.id)
     userid = user.id
-    filename = '_user_photo.jpg'
+    filename = userid + '_user_photo.jpg'
     update.message.reply_text("Готово. Информация отправлена администратору чата для проверки. Ожидайте ответа.",
                               reply_markup=ReplyKeyboardRemove())
     context.bot.send_photo(chat_id=corpus_admin, photo=open(filename, 'rb'),
