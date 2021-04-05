@@ -114,10 +114,11 @@ def photo(update: Update, context: CallbackContext) -> int:
     user = update.message.from_user
     user_data = context.user_data
     photo_file = update.message.photo[-1].get_file()
-    photo_file.download(user.id + 'user_photo.jpg')
+    filename = user.id + 'user_photo.jpg'
+    photo_file.download(filename)
     category = 'Подтверждение'
     user_data[category] = 'Да'
-    logger.info("Photo of %s: %s", user.name, user.id + 'user_photo.jpg')
+    logger.info("Photo of %s: %s", user.name, user.id + filename)
     update.message.reply_text(
         'Отлично.\n\n'
         'Вы согласны на размещение вашего ника Telegram и номера квартиры в общей таблице жильцов корпуса?'
@@ -183,9 +184,10 @@ def confirmation(update: Update, context: CallbackContext) -> int:
     corpus_admin = corp_admins[corpus_no]
     logger.info("Admin of %s: %s", corpus_no, corpus_admin)
     logger.info("User %s chat_id is %s", user.full_name, user.id)
+    filename = user.id + 'user_photo.jpg'
     update.message.reply_text("Готово. Информация отправлена администратору чата для проверки. Ожидайте ответа.",
                               reply_markup=ReplyKeyboardRemove())
-    context.bot.send_photo(chat_id=corpus_admin, photo=open(user.id + 'user_photo.jpg', 'rb'),
+    context.bot.send_photo(chat_id=corpus_admin, photo=open(filename, 'rb'),
                            caption='Привет, есть заявка на добавление в чат: \n {}'.format(facts_to_str(user_data)))
     return ConversationHandler.END
 
