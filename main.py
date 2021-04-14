@@ -64,13 +64,13 @@ def corpus(update: Update, context: CallbackContext) -> int:
     text = update.message.text
     user_data[category] = text
     logger.info("Corpus of %s: %s", user.name, update.message.text)
-    addr = {'1': ' по адресу мкр. Парковый, д. 1, корп. 3.',
-            '3': ' по адресу мкр. Парковый, д. 1, корп. 1.',
-            '6': ' по адресу мкр. Парковый, д. 1, корп. 4.',
+    addr = {'1': ' по адресу: мкр. Парковый, д. 1, корп. 3.',
+            '3': ' по адресу: мкр. Парковый, д. 1, корп. 1.',
+            '6': ' по адресу: мкр. Парковый, д. 1, корп. 4.',
             '19.1': ' ,адрес не присвоен.'}
     update.message.reply_text(
         'Вы выбрали корпус ' + text + addr[text] + '\n\n'
-                                                  'Теперь напишите номер вашего этажа.',
+        'Теперь напишите номер вашего этажа.',
     )
 
     return FLOOR
