@@ -22,7 +22,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-CORPUS, FLOOR, PLOSHAD, FLAT, PHOTO, VIS, CONTACT, CONFIRMATION = range(8)
+CORPUS, FLOOR, PLOSHAD, FLAT, PHOTO, NEWNAME, VIS, CONTACT, CONFIRMATION = range(9)
 
 
 def facts_to_str(user_data):
@@ -42,7 +42,13 @@ def start(update: Update, context: CallbackContext) -> int:
     text = user.full_name
     user_data[category] = text
     update.message.reply_text(
-        'Приветствуем! Этот бот поможет авторизоваться в закрытом чате жильцов своего корпуса.\n\n'
+        'Привет! \n'
+        'Этот бот поможет авторизоваться в закрытом чате жильцов своего корпуса ЖК Белая Дача Парк. '
+        'В процессе работы бот задаст вам несколько вопросов  и запросит подтверждение того что вы действительно '
+        'являетесь собственником квартиры (подойдёт скриншот из личного кабинета с адресом дома и квартиры, '
+        'фотография договора с адресом и т.п.). После завершения введённые данные будут направлены администратору '
+        'группы корпуса для проверки. \n'
+        'Администраторы группы корпуса обязуются не передавать эти данные третьим лица без вашего прямого согласия.\n\n'
         'Для выхода из диалога введите /cancel \n\n'
         'Для продолжения выберите номер корпуса',
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True),
@@ -58,8 +64,13 @@ def corpus(update: Update, context: CallbackContext) -> int:
     text = update.message.text
     user_data[category] = text
     logger.info("Corpus of %s: %s", user.name, update.message.text)
+    addr = {'1': ' по адресу мкр. Парковый, д. 1, корп. 3.',
+            '3': ' по адресу мкр. Парковый, д. 1, корп. 1.',
+            '6': ' по адресу мкр. Парковый, д. 1, корп. 4.',
+            '19.1': ' ,адрес не присвоен.'}
     update.message.reply_text(
-        'Хорошо, теперь напишите номер вашего этажа',
+        'Вы выбрали корпус ' + text + addr[text] + '\n\n'
+                                                  'Теперь напишите номер вашего этажа.',
     )
 
     return FLOOR
@@ -102,15 +113,16 @@ def flat(update: Update, context: CallbackContext) -> int:
     logger.info("Flat of %s: %s", user.name, update.message.text)
     update.message.reply_text(
         'Спасибо!\n\n'
-        'Теперь вам нужно подтвердить владение квартирой в этом корпусе\n\n'
-        'Пришлите скриншот из личного кабинета ПИК или фото ДДУ, в которых отчётливо виден адрес дома',
+        'Теперь вам нужно подтвердить владение квартирой в этом корпусе.\n\n'
+        'Пришлите скриншот из личного кабинета ПИК или фото договора, в которых отчётливо виден адрес дома.\n'
+        'Прочие личные данные можно замазать.',
     )
 
     return PHOTO
 
 
 def photo(update: Update, context: CallbackContext) -> int:
-    reply_keyboard = [['Да', 'Нет']]
+    reply_keyboard = [['Да', 'Да, но сменить имя', 'Нет']]
     user = update.message.from_user
     user_data = context.user_data
     photo_file = update.message.photo[-1].get_file()
@@ -122,11 +134,17 @@ def photo(update: Update, context: CallbackContext) -> int:
     logger.info("Photo of %s: %s", user.name, filename)
     update.message.reply_text(
         'Отлично.\n\n'
-        'Вы согласны на размещение вашего ника Telegram и номера квартиры в общей таблице жильцов корпуса?'
-        ' Она будет открыта для участников чата корпуса.',
+        'Вы согласны на размещение вашего ника Telegram ('
+        + user.full_name +
+        ') и номера квартиры в общей таблице жильцов корпуса? '
+        'Она будет открыта для участников чата корпуса.',
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True),
     )
 
+    return VIS
+
+
+def newname(update: Update, context: CallbackContext) -> int:
     return VIS
 
 
@@ -137,6 +155,7 @@ def vis(update: Update, context: CallbackContext) -> int:
     text = update.message.text
     user_data[category] = text
     logger.info("Visable of %s: %s", user.name, update.message.text)
+
     if user.name[0] == '@':
         reply_keyboard = [['Подтвердить', 'Отказаться']]
         category = 'Имя пользователя'
@@ -228,7 +247,8 @@ def main() -> None:
             PLOSHAD: [MessageHandler(Filters.text & ~Filters.command, ploshad)],
             FLAT: [MessageHandler(Filters.text & ~Filters.command, flat)],
             PHOTO: [MessageHandler(Filters.photo, photo)],
-            VIS: [MessageHandler(Filters.regex('^(Да|Нет)$'), vis)],
+            NEWNAME: [MessageHandler(Filters.text & ~Filters.command, newname)],
+            VIS: [MessageHandler(Filters.regex('^(Да|Да, но сменить имя|Нет)$'), vis)],
             CONTACT: [MessageHandler(Filters.contact, contact),
                       MessageHandler(Filters.regex('^(Веруться)$'), start)],
             CONFIRMATION: [MessageHandler(Filters.regex('^(Подтвердить)$'), confirmation),
