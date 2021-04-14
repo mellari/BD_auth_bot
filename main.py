@@ -122,7 +122,7 @@ def flat(update: Update, context: CallbackContext) -> int:
 
 
 def photo(update: Update, context: CallbackContext) -> int:
-    reply_keyboard = [['Да', 'Да, но сменить имя', 'Нет']]
+    reply_keyboard = [['Да', 'Нет'], ['Да, но сменить имя']]
     user = update.message.from_user
     user_data = context.user_data
     photo_file = update.message.photo[-1].get_file()
