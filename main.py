@@ -145,6 +145,15 @@ def photo(update: Update, context: CallbackContext) -> int:
 
 
 def newname(update: Update, context: CallbackContext) -> int:
+    user = update.message.from_user
+    user_data = context.user_data
+    category = 'Имя для публикации в списке жильцов'
+    text = update.message.text
+    user_data[category] = text
+    logger.info("New Name of %s: %s", user.name, update.message.text)
+    update.message.reply_text(
+        'Введите имя для публикации в списке жильцов',
+    )
     return VIS
 
 
@@ -242,16 +251,17 @@ def main() -> None:
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            CORPUS: [MessageHandler(Filters.regex('^(1|3|6|19.1|9 3/4)$'), corpus)],
+            CORPUS: [MessageHandler(Filters.regex('^(1|3|6|19.1|9 3/4)$') & ~Filters.command, corpus)],
             FLOOR: [MessageHandler(Filters.text & ~Filters.command, floor)],
             PLOSHAD: [MessageHandler(Filters.text & ~Filters.command, ploshad)],
             FLAT: [MessageHandler(Filters.text & ~Filters.command, flat)],
-            PHOTO: [MessageHandler(Filters.photo, photo)],
+            PHOTO: [MessageHandler(Filters.photo & ~Filters.command, photo)],
+            VIS: [MessageHandler(Filters.regex('^(Да|Нет)$'), vis),
+                  MessageHandler(Filters.regex('^(Да, но сменить имя)$'), newname)],
             NEWNAME: [MessageHandler(Filters.text & ~Filters.command, newname)],
-            VIS: [MessageHandler(Filters.regex('^(Да|Да, но сменить имя|Нет)$'), vis)],
-            CONTACT: [MessageHandler(Filters.contact, contact),
+            CONTACT: [MessageHandler(Filters.contact & ~Filters.command, contact),
                       MessageHandler(Filters.regex('^(Веруться)$'), start)],
-            CONFIRMATION: [MessageHandler(Filters.regex('^(Подтвердить)$'), confirmation),
+            CONFIRMATION: [MessageHandler(Filters.regex('^(Подтвердить)$') & ~Filters.command, confirmation),
                            MessageHandler(Filters.regex('^(Отказаться)$'), start)]
         },
         fallbacks=[CommandHandler('cancel', cancel)],
