@@ -35,7 +35,7 @@ def facts_to_str(user_data):
 
 
 def start(update: Update, context: CallbackContext) -> int:
-    reply_keyboard = [['1', '3', '6', '19.1']]
+    reply_keyboard = [['мкр. Парковый, д1 к3'], ['мкр. Парковый, д1 к1'], ['мкр. Парковый, д1 к2'], ['Корпус 19.1']]
     user = update.message.from_user
     user_data = context.user_data
     category = 'Имя'
@@ -50,7 +50,7 @@ def start(update: Update, context: CallbackContext) -> int:
         'группы корпуса для проверки. \n'
         'Администраторы группы корпуса обязуются не передавать эти данные третьим лица без вашего прямого согласия.\n\n'
         'Для выхода из диалога введите /cancel \n\n'
-        'Для продолжения выберите номер корпуса',
+        'Для продолжения выберите корпус',
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True),
     )
 
@@ -60,16 +60,12 @@ def start(update: Update, context: CallbackContext) -> int:
 def corpus(update: Update, context: CallbackContext) -> int:
     user = update.message.from_user
     user_data = context.user_data
-    category = 'Номер корпуса'
+    category = 'Корпус'
     text = update.message.text
     user_data[category] = text
     logger.info("Corpus of %s: %s", user.name, update.message.text)
-    addr = {'1': ' по адресу: мкр. Парковый, д. 1, корп. 3.',
-            '3': ' по адресу: мкр. Парковый, д. 1, корп. 1.',
-            '6': ' по адресу: мкр. Парковый, д. 1, корп. 4.',
-            '19.1': ' ,адрес не присвоен.'}
     update.message.reply_text(
-        'Вы выбрали корпус ' + text + addr[text] + '\n\n'
+        'Вы выбрали корпус ' + text + '\n\n'
         'Теперь напишите номер вашего этажа.',
     )
 
@@ -205,8 +201,9 @@ def contact(update: Update, context: CallbackContext) -> int:
 def confirmation(update: Update, context: CallbackContext) -> int:
     user_data = context.user_data
     user = update.message.from_user
-    corp_admins = {'1': 341319501, '3': 966732442, '6': 565045535, '19.1': 772564363, '9 3/4': 341319501}
-    corpus_no = user_data['Номер корпуса']
+    corp_admins = {'мкр. Парковый, д1 к3': 341319501, 'мкр. Парковый, д1 к1': 966732442,
+                   'мкр. Парковый, д1 к4': 565045535, 'Корпус 19.1': 772564363}
+    corpus_no = user_data['Корпус']
     corpus_admin = corp_admins[corpus_no]
     logger.info("Admin of %s: %s", corpus_no, corpus_admin)
     logger.info("User %s chat_id is %s", user.full_name, user.id)
@@ -246,7 +243,8 @@ def main() -> None:
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            CORPUS: [MessageHandler(Filters.regex('^(1|3|6|19.1)$') & ~Filters.command, corpus)],
+            CORPUS: [MessageHandler(Filters.regex('^(мкр. Парковый, д1 к3|мкр. Парковый, д1 к1|мкр. Парковый, '
+                                                  'д1 к2|Корпус 19.1)$') & ~Filters.command, corpus)],
             FLOOR: [MessageHandler(Filters.text & ~Filters.command, floor)],
             PLOSHAD: [MessageHandler(Filters.text & ~Filters.command, ploshad)],
             FLAT: [MessageHandler(Filters.text & ~Filters.command, flat)],
