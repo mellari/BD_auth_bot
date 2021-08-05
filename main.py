@@ -35,7 +35,7 @@ def facts_to_str(user_data):
 
 
 def start(update: Update, context: CallbackContext) -> int:
-    reply_keyboard = [['мкр. Парковый, д1 к3'], ['мкр. Парковый, д1 к1'], ['мкр. Парковый, д1 к2'], ['Корпус 19.1']]
+    reply_keyboard = [['мкр. Парковый, д1 к3'], ['мкр. Парковый, д1 к1'], ['мкр. Парковый, д1 к4'], ['Корпус 19.1']]
     user = update.message.from_user
     user_data = context.user_data
     category = 'Имя'
@@ -244,7 +244,7 @@ def main() -> None:
         entry_points=[CommandHandler('start', start)],
         states={
             CORPUS: [MessageHandler(Filters.regex('^(мкр. Парковый, д1 к3|мкр. Парковый, д1 к1|мкр. Парковый, '
-                                                  'д1 к2|Корпус 19.1)$') & ~Filters.command, corpus)],
+                                                  'д1 к4|Корпус 19.1)$') & ~Filters.command, corpus)],
             FLOOR: [MessageHandler(Filters.text & ~Filters.command, floor)],
             PLOSHAD: [MessageHandler(Filters.text & ~Filters.command, ploshad)],
             FLAT: [MessageHandler(Filters.text & ~Filters.command, flat)],
