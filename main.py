@@ -134,7 +134,7 @@ def photo(update: Update, context: CallbackContext) -> int:
         + user.full_name +
         ') и номера квартиры в общей таблице жильцов корпуса? '
         'Она будет открыта для участников чата корпуса.',
-        reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True),
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=False),
     )
 
     return VIS
