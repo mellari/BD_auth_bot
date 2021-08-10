@@ -35,7 +35,7 @@ def facts_to_str(user_data):
 
 
 def start(update: Update, context: CallbackContext) -> int:
-    reply_keyboard = [['мкр. Парковый, д1 к3'], ['мкр. Парковый, д1 к1'], ['мкр. Парковый, д1 к4'], ['Корпус 19.1']]
+    reply_keyboard = [['мкр. Парковый, д1 к3'], ['мкр. Парковый, д1 к1'], ['мкр. Парковый, д1 к4']]
     user = update.message.from_user
     user_data = context.user_data
     category = 'Имя'
